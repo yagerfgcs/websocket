@@ -68,7 +68,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	//defer trace.Stop()
+	defer trace.Stop()
 
 	// // pprof分析
 	// pprof_file, err := os.Create("./log/pprof.log")
@@ -119,8 +119,8 @@ func main() {
 	sig := <-sigCh
 	fmt.Printf("Received signal %s, shutting down...\n", sig)
 	log.Println("----stop CPUProfile")
-	f.Close()
 	//trace.Stop()
+	//f.Close()
 	// // 关闭文件
 	// if err := pprof_file.Close(); err != nil {
 	// 	log.Fatal(err)
