@@ -12,9 +12,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"github.com/gorilla/websocket"
 	"os"
 	"runtime/trace"
+
+	"github.com/gorilla/websocket"
+
 	//"runtime/pprof"
 	//"runtime"
 	"fmt"
@@ -53,6 +55,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	fmt.Printf("----start\n")
 	// 创建跟踪文件
 	f, err := os.Create("./log/trace.log")
 	if err != nil {
@@ -75,7 +78,7 @@ func main() {
 	// defer pprof_file.Close()
 
 	// //w, _ := os.OpenFile("pprof.out", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
-  // //pprof.StartCPUProfile(pprof_file)
+	// //pprof.StartCPUProfile(pprof_file)
 	// // 记录 CPU 使用率
 	// if err := pprof.StartCPUProfile(pprof_file); err != nil {
 	// 	log.Fatal(err)
@@ -105,7 +108,7 @@ func main() {
 	http.HandleFunc("/", home)
 	//log.Fatal(http.ListenAndServe(*addr, nil))
 	http.ListenAndServe(*addr, nil)
-	
+
 	// 创建一个信号通道
 	sigCh := make(chan os.Signal, 1)
 
@@ -116,7 +119,8 @@ func main() {
 	sig := <-sigCh
 	fmt.Printf("Received signal %s, shutting down...\n", sig)
 	log.Println("----stop CPUProfile")
-	trace.Stop()
+	f.Close()
+	//trace.Stop()
 	// // 关闭文件
 	// if err := pprof_file.Close(); err != nil {
 	// 	log.Fatal(err)
