@@ -13,6 +13,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"runtime/trace"
 
 	"github.com/gorilla/websocket"
@@ -57,7 +59,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Printf("----start\n")
 	// 创建跟踪文件
-	f, err := os.Create("./log/trace.log")
+	f, err := os.Create("trace.log")
 	if err != nil {
 		panic(err)
 	}
@@ -70,44 +72,44 @@ func main() {
 	}
 	defer trace.Stop()
 
-	// // pprof分析
-	// pprof_file, err := os.Create("./log/pprof.log")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer pprof_file.Close()
+	// pprof分析
+	pprof_file, err := os.Create("pprof.log")
+	if err != nil {
+		panic(err)
+	}
+	defer pprof_file.Close()
 
-	// //w, _ := os.OpenFile("pprof.out", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
-	// //pprof.StartCPUProfile(pprof_file)
-	// // 记录 CPU 使用率
-	// if err := pprof.StartCPUProfile(pprof_file); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer pprof.StopCPUProfile()
+	//w, _ := os.OpenFile("pprof.out", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
+	//pprof.StartCPUProfile(pprof_file)
+	// 记录 CPU 使用率
+	if err := pprof.StartCPUProfile(pprof_file); err != nil {
+		log.Fatal(err)
+	}
+	defer pprof.StopCPUProfile()
 
-	// // 记录内存分配
-	// if err := pprof.Lookup("heap").WriteTo(pprof_file, 0); err != nil {
-	// 		log.Fatal(err)
-	// }
+	// 记录内存分配
+	if err := pprof.Lookup("heap").WriteTo(pprof_file, 0); err != nil {
+		log.Fatal(err)
+	}
 
-	// // 记录堆栈信息
-	// runtime.SetBlockProfileRate(1)
-	// defer runtime.SetBlockProfileRate(0)
-	// if err := pprof.Lookup("block").WriteTo(pprof_file, 0); err != nil {
-	// 		log.Fatal(err)
-	// }
+	// 记录堆栈信息
+	runtime.SetBlockProfileRate(1)
+	defer runtime.SetBlockProfileRate(0)
+	if err := pprof.Lookup("block").WriteTo(pprof_file, 0); err != nil {
+		log.Fatal(err)
+	}
 
-	// // 记录锁竞争
-	// if err := pprof.Lookup("mutex").WriteTo(pprof_file, 0); err != nil {
-	// 		log.Fatal(err)
-	// }
+	// 记录锁竞争
+	if err := pprof.Lookup("mutex").WriteTo(pprof_file, 0); err != nil {
+		log.Fatal(err)
+	}
 
 	flag.Parse()
 	log.SetFlags(0)
 	http.HandleFunc("/echo", echo)
 	http.HandleFunc("/", home)
-	//log.Fatal(http.ListenAndServe(*addr, nil))
-	http.ListenAndServe(*addr, nil)
+	log.Fatal(http.ListenAndServe(*addr, nil))
+	//http.ListenAndServe(*addr, nil)
 
 	// 创建一个信号通道
 	sigCh := make(chan os.Signal, 1)
