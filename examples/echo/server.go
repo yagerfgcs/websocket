@@ -12,11 +12,17 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-
 	"github.com/gorilla/websocket"
+	"os"
+	"runtime/trace"
+	//"runtime/pprof"
+	//"runtime"
+	"fmt"
+	"os/signal"
+	"syscall"
 )
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
+var addr = flag.String("addr", "localhost:8088", "http service address")
 
 var upgrader = websocket.Upgrader{} // use default options
 
@@ -47,11 +53,74 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// 创建跟踪文件
+	f, err := os.Create("./log/trace.log")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	// 启动跟踪
+	err = trace.Start(f)
+	if err != nil {
+		panic(err)
+	}
+	//defer trace.Stop()
+
+	// // pprof分析
+	// pprof_file, err := os.Create("./log/pprof.log")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer pprof_file.Close()
+
+	// //w, _ := os.OpenFile("pprof.out", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0644)
+  // //pprof.StartCPUProfile(pprof_file)
+	// // 记录 CPU 使用率
+	// if err := pprof.StartCPUProfile(pprof_file); err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer pprof.StopCPUProfile()
+
+	// // 记录内存分配
+	// if err := pprof.Lookup("heap").WriteTo(pprof_file, 0); err != nil {
+	// 		log.Fatal(err)
+	// }
+
+	// // 记录堆栈信息
+	// runtime.SetBlockProfileRate(1)
+	// defer runtime.SetBlockProfileRate(0)
+	// if err := pprof.Lookup("block").WriteTo(pprof_file, 0); err != nil {
+	// 		log.Fatal(err)
+	// }
+
+	// // 记录锁竞争
+	// if err := pprof.Lookup("mutex").WriteTo(pprof_file, 0); err != nil {
+	// 		log.Fatal(err)
+	// }
+
 	flag.Parse()
 	log.SetFlags(0)
 	http.HandleFunc("/echo", echo)
 	http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	//log.Fatal(http.ListenAndServe(*addr, nil))
+	http.ListenAndServe(*addr, nil)
+	
+	// 创建一个信号通道
+	sigCh := make(chan os.Signal, 1)
+
+	// 监听 SIGINT 和 SIGTERM 信号
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	// 等待信号
+	sig := <-sigCh
+	fmt.Printf("Received signal %s, shutting down...\n", sig)
+	log.Println("----stop CPUProfile")
+	trace.Stop()
+	// // 关闭文件
+	// if err := pprof_file.Close(); err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
